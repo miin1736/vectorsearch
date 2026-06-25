@@ -1,15 +1,44 @@
 # KoreanOps-RAG
 
-Hybrid RAG experiment platform for IT support tickets and system logs.
+CPU-first Hybrid RAG experiment platform for Korean IT support tickets, system logs, and
+office PDF documents.
 
-This repository is configured for the current local machine profile:
+The project compares BM25, dense vector search, Hybrid RRF/weighted retrieval, and grounded
+RAG while keeping experiments reproducible on a Windows PC without CUDA.
+
+## Current Status
+
+The active experiment is `ko_unstructured_v2`, based on AI Hub
+`18.오피스 문서 생성 데이터`.
+
+- 9,491 PDFs and 9,491 matching label documents have been inventoried.
+- Label JSON is used only as evaluation Oracle data, never to build the production corpus.
+- Fixed, Page, Structure, Contextual, and Oracle chunk pipelines are implemented.
+- A stratified 100-document pilot has been parsed, indexed, and evaluated.
+- Vector retrieval currently leads BM25 and Hybrid on the provisional 30-question pilot.
+- Page and Structure are the strongest practical chunk variants so far.
+- The next step is manual Golden Set review followed by a 1,000-document pilot.
+
+These pilot results are provisional. See
+[`experiments/ko_unstructured_v2/OFFICE_PDF_STATUS.md`](experiments/ko_unstructured_v2/OFFICE_PDF_STATUS.md)
+for current metrics, remaining work, and artifact paths.
+
+Historical ticket/log experiments and their latest findings are documented in
+[`PROJECT_PROGRESS_AND_NEXT_PLAN.md`](PROJECT_PROGRESS_AND_NEXT_PLAN.md).
+
+## Local Environment
+
+This repository is configured for the current Windows machine profile:
 
 - CPU-first execution on Ryzen 7 7800X3D
-- 32GB RAM aware batching
-- large data outside OneDrive under `C:\vectorsearch-data`
+- 32 GB RAM-aware batching
+- Python 3.11 64-bit through the project `.venv`
+- `uv run ...` instead of the system `python` command
 - Docker Compose for Qdrant and OpenSearch
-- `uv run ...` instead of the system `python` command, because the default `python`
-  on this PC points to 32-bit Python 3.10
+- large data, indexes, models, and generated artifacts under `C:\vectorsearch-data`
+
+The system `python` command must not be used because it points to 32-bit Python 3.10 on the
+current machine.
 
 ## Quick Start
 
@@ -17,28 +46,9 @@ This repository is configured for the current local machine profile:
 uv python install 3.11
 uv venv --python 3.11
 uv sync --all-groups
-uv run koreanops-check-env
-```
-
-For model downloads and caches, keep all non-exe artifacts under `C:\vectorsearch-data`.
-In PowerShell, dot-source the project environment script before downloading models or
-running embedding commands:
-
-```powershell
 . .\scripts\project-env.ps1
 uv run koreanops-check-env
 ```
-
-If Ollama was installed through the Windows installer, start its server through the project
-script so it inherits `OLLAMA_MODELS`:
-
-```powershell
-.\scripts\start-ollama-project.ps1
-ollama list
-```
-
-If `ollama list` is empty even though model files exist under `C:\vectorsearch-data`, close
-the Ollama tray app and rerun `.\scripts\start-ollama-project.ps1`.
 
 Start retrieval infrastructure after Docker Desktop is running:
 
@@ -46,9 +56,24 @@ Start retrieval infrastructure after Docker Desktop is running:
 docker compose up -d qdrant opensearch
 ```
 
-## Data Layout
+For Ollama, use the project script so the server inherits the project model directory:
 
-Large files should not live in this OneDrive-backed repository.
+```powershell
+.\scripts\start-ollama-project.ps1
+ollama list
+```
+
+If `ollama list` is empty even though model files exist under `C:\vectorsearch-data`, close
+the Ollama tray app and rerun the script.
+
+## Data
+
+Raw source data is not committed to GitHub. The shared project data is available from:
+
+- [Google Drive data folder](https://drive.google.com/drive/folders/1uyCAlEuKjXTVFXh3eV0jux2ivFC7NKZY?usp=sharing)
+
+Download or copy the required source files from Google Drive into `C:\vectorsearch-data`.
+Do not place large datasets inside this OneDrive-backed repository.
 
 ```text
 C:\vectorsearch-data
@@ -59,13 +84,88 @@ C:\vectorsearch-data
   reports\
   models\
   cache\
+  ko-unstructured\
+    raw\
+    processed\
+    eval\
+    reports\
 ```
 
-Repo-local `data/` directories are placeholders only.
+The repository-local `data/` directories are placeholders only. Generated JSONL files,
+vector indexes, model caches, and large evaluation artifacts must remain outside Git.
 
-## Pipeline
+## Active Office PDF Experiment
 
-Normalize tickets:
+The `ko_unstructured_v2` experiment is isolated from the historical KoreanOps ticket/log
+experiment by its data root and index names:
+
+- Data root: `C:\vectorsearch-data\ko-unstructured`
+- Qdrant/OpenSearch prefix: `ko_unstructured_pdf_`
+- Configs: `experiments/ko_unstructured_v2/configs/`
+
+Do not use `configs/default.yaml` for Office PDF runs. Use one of the experiment-specific
+configs such as:
+
+- `pdf_fixed.yaml`
+- `pdf_page.yaml`
+- `pdf_structure.yaml`
+- `pdf_contextual.yaml`
+- `pdf_oracle.yaml`
+
+Typical pipeline:
+
+```powershell
+# 1. Inventory PDFs in the downloaded AI Hub ZIP archives
+uv run koreanops-office-inventory `
+  C:\vectorsearch-data\ko-unstructured\raw `
+  C:\vectorsearch-data\ko-unstructured\processed\office_manifest.jsonl
+
+# 2. Parse PDFs without consulting label JSON
+uv run koreanops-office-parse `
+  C:\vectorsearch-data\ko-unstructured\raw `
+  C:\vectorsearch-data\ko-unstructured\processed\office_manifest.jsonl `
+  C:\vectorsearch-data\ko-unstructured\processed\pages.jsonl `
+  C:\vectorsearch-data\ko-unstructured\processed\blocks.jsonl `
+  C:\vectorsearch-data\ko-unstructured\processed\documents.jsonl
+
+# 3. Build a structure-aware corpus
+uv run koreanops-office-build-chunks `
+  C:\vectorsearch-data\ko-unstructured\processed\documents.jsonl `
+  C:\vectorsearch-data\ko-unstructured\processed\chunks_structure.jsonl `
+  structure `
+  --blocks-jsonl C:\vectorsearch-data\ko-unstructured\processed\blocks.jsonl `
+  --pages-jsonl C:\vectorsearch-data\ko-unstructured\processed\pages.jsonl
+```
+
+Index the resulting corpus with the matching experiment config:
+
+```powershell
+uv run koreanops-index-qdrant `
+  C:\vectorsearch-data\ko-unstructured\processed\chunks_structure.jsonl `
+  --config-path experiments\ko_unstructured_v2\configs\pdf_structure.yaml `
+  --resume
+
+uv run koreanops-index-opensearch `
+  C:\vectorsearch-data\ko-unstructured\processed\chunks_structure.jsonl `
+  --config-path experiments\ko_unstructured_v2\configs\pdf_structure.yaml
+```
+
+The Office PDF workflow also includes:
+
+- `koreanops-office-build-oracle`
+- `koreanops-office-build-golden`
+- `koreanops-office-eval-parsing`
+- `koreanops-office-eval-chunking`
+- `koreanops-office-eval-retrieval`
+- `koreanops-office-eval-rag`
+
+These commands cover evaluation-only Oracle generation, Golden Set creation, parsing/chunking
+quality checks, retrieval evaluation with bootstrap confidence intervals, and grounded RAG
+evaluation. Run any CLI with `--help` for its exact arguments.
+
+## Historical Ticket/Log Pipeline
+
+Normalize tickets and logs:
 
 ```powershell
 uv run koreanops-load-tickets `
@@ -73,11 +173,7 @@ uv run koreanops-load-tickets `
   C:\vectorsearch-data\processed\tickets.jsonl `
   --source-dataset customer_support `
   --dataset-key multilingual_customer_support
-```
 
-Normalize LogHub logs:
-
-```powershell
 uv run koreanops-load-logs `
   C:\vectorsearch-data\raw\HDFS.log `
   C:\vectorsearch-data\processed\logs.jsonl `
@@ -85,64 +181,44 @@ uv run koreanops-load-logs `
   --system hdfs
 ```
 
-Build RAG documents:
+Build and index RAG documents:
 
 ```powershell
 uv run koreanops-build-docs `
   C:\vectorsearch-data\processed\documents.jsonl `
   --ticket-jsonl C:\vectorsearch-data\processed\tickets.jsonl `
   --log-jsonl C:\vectorsearch-data\processed\logs.jsonl
-```
 
-Index documents after Docker services are healthy:
-
-```powershell
 uv run koreanops-index-qdrant C:\vectorsearch-data\processed\documents.jsonl
 uv run koreanops-index-opensearch C:\vectorsearch-data\processed\documents.jsonl
 ```
 
-## Experiment Goal
+The current CPU-first default embedding model remains
+`intfloat/multilingual-e5-small`. BGE-M3 produced only a marginal quality gain on the
+10,000-chunk comparison subset while adding substantial CPU latency.
 
-The primary output is not a demo UI. The primary output is a reproducible experiment
-report comparing:
+## Experiment Outputs
 
-- BM25
-- Dense vector search
-- Hybrid retrieval with RRF
-- Hybrid plus optional reranking
+Primary retrieval metrics:
 
-Core metrics:
-
-- Recall@5
-- Recall@10
+- Recall@5 and Recall@10
 - MRR
 - nDCG@10
-- P50/P95 latency
-- RAGAS faithfulness, answer relevancy, context precision, context recall
+- P50 and P95 latency
+- parent/page-aware matching for chunked documents
+- 95% bootstrap confidence intervals for Office PDF retrieval
 
-RAGAS evaluation should use a stratified sample of 100-300 questions because local
-LLM evaluation is CPU-bound and slow.
+RAG evaluation uses manually approved Golden questions and checks grounded answers with
+document/page citations. Human-facing outputs live in `reports/`, while large generated
+metrics and artifacts remain under `C:\vectorsearch-data`.
 
-## Active Experiment Isolation
+## Verification
 
-The current next experiment is `ko_unstructured_v2`. Do not use `configs/default.yaml` for that
-experiment. Use one of the stage-specific configs under:
+Run before considering a code change complete:
 
-```text
-experiments/ko_unstructured_v2/configs/
+```powershell
+uv run ruff check .
+uv run pytest
+uv run koreanops-check-env
+docker compose config
 ```
-
-The v2 experiment uses isolated data and index namespaces:
-
-- Data root: `C:\vectorsearch-data\ko-unstructured`
-- Qdrant/OpenSearch prefix: `ko_unstructured_`
-
-KoreanOps v1 collections and indexes are historical baselines and should not be deleted or reused
-for v2 runs.
-
-## Office PDF v2
-
-The active dataset is AI Hub `18.오피스 문서 생성 데이터`. PDF content is parsed without
-consulting labels; labels are used only as an Oracle for evaluation and Golden Set creation.
-
-See `experiments/ko_unstructured_v2/OFFICE_PDF_STATUS.md` for current results and artifact paths.
