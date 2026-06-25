@@ -1,0 +1,25 @@
+default:
+  ticket_id: ticket_id
+  created_at: created_at
+  ticket_type: type
+  priority: priority
+  queue: queue
+  business_type: business_type
+  subject: subject
+  description: body
+  resolution: answer
+  tags: tags
+  status: status
+
+multilingual_customer_support:
+  ticket_id: id
+  created_at: created_at
+  ticket_type: type
+  priority: priority
+  queue: queue
+  business_type: business_type
+  subject: subject
+  description: body
+  resolution: answer
+  tags: [tag_1, tag_2, tag_3, tag_4, tag_5, tag_6, tag_7, tag_8]
+  status: status

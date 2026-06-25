@@ -1,0 +1,31 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.env
+*.pyc
+
+# Large experiment data lives outside OneDrive-backed repo by default.
+data/raw/*
+data/processed/*
+data/index/*
+data/eval/*
+data/reports/*
+!data/**/.gitkeep
+
+# Local reports can be regenerated.
+reports/*.csv
+
+# Experiment-local generated artifacts stay out of git.
+experiments/**/artifacts/
+experiments/**/reports/*.csv
+experiments/**/reports/*.jsonl
+experiments/**/reports/*.parquet
+
+# Korean unstructured v2 large data must stay under C:\vectorsearch-data\ko-unstructured.
+experiments/ko_unstructured_v2/raw/
+experiments/ko_unstructured_v2/processed/
+experiments/ko_unstructured_v2/index/
+experiments/ko_unstructured_v2/eval/*.jsonl

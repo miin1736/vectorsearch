@@ -1,0 +1,13 @@
+data_root: C:\vectorsearch-data\ko-unstructured
+embedding:
+  model_name: intfloat/multilingual-e5-small
+  batch_size: 64
+  device: cpu
+qdrant:
+  url: http://localhost:6333
+  collection: ko_unstructured_pdf_fixed
+opensearch:
+  url: http://localhost:9200
+  index: ko_unstructured_pdf_fixed
+  username: admin
+  password: admin

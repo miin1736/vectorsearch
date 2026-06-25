@@ -1,0 +1,72 @@
+[project]
+name = "koreanops-rag"
+version = "0.1.0"
+description = "Hybrid RAG experiment platform for Korean/IT operations tickets and logs."
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+    "httpx>=0.27.0",
+    "numpy>=1.26.0",
+    "opensearch-py>=2.6.0",
+    "pandas>=2.2.0",
+    "pymupdf>=1.24.0",
+    "pydantic>=2.7.0",
+    "pydantic-settings>=2.3.0",
+    "pyyaml>=6.0.1",
+    "qdrant-client>=1.9.0",
+    "ragas>=0.2.0",
+    "sentence-transformers>=3.0.0",
+    "typer>=0.12.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.2.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.5.0",
+]
+
+[project.scripts]
+koreanops-check-env = "koreanops_rag.scripts.check_environment:main"
+koreanops-load-tickets = "koreanops_rag.ingestion.load_tickets:main"
+koreanops-load-logs = "koreanops_rag.ingestion.load_logs:main"
+koreanops-build-docs = "koreanops_rag.documents.build_documents:main"
+koreanops-index-qdrant = "koreanops_rag.indexing.qdrant_index:main"
+koreanops-index-opensearch = "koreanops_rag.indexing.opensearch_index:main"
+koreanops-build-validation = "koreanops_rag.evaluation.build_validation_set:main"
+koreanops-eval-retrieval = "koreanops_rag.evaluation.run_retrieval_eval:main"
+koreanops-eval-rag-smoke = "koreanops_rag.evaluation.run_rag_smoke_eval:main"
+koreanops-analyze-vector = "koreanops_rag.evaluation.analyze_vector_quality:main"
+koreanops-build-field-chunks = "koreanops_rag.documents.chunk_documents:main"
+koreanops-build-contextual-chunks = "koreanops_rag.documents.contextual_chunks:main"
+koreanops-build-eval-subset = "koreanops_rag.evaluation.build_eval_subset:main"
+koreanops-analyze-query-types = "koreanops_rag.evaluation.analyze_query_types:main"
+koreanops-eval-weighted-hybrid = "koreanops_rag.evaluation.run_weighted_hybrid_eval:main"
+koreanops-office-inventory = "koreanops_rag.office.inventory:main"
+koreanops-office-parse = "koreanops_rag.office.parse_pdfs:main"
+koreanops-office-build-oracle = "koreanops_rag.office.build_oracle:main"
+koreanops-office-build-chunks = "koreanops_rag.office.chunking:main"
+koreanops-office-build-golden = "koreanops_rag.office.golden_set:main"
+koreanops-office-eval-parsing = "koreanops_rag.office.evaluate_parsing:main"
+koreanops-office-eval-chunking = "koreanops_rag.office.evaluate_chunking:main"
+koreanops-office-eval-retrieval = "koreanops_rag.office.evaluate_retrieval:main"
+koreanops-office-eval-rag = "koreanops_rag.office.evaluate_rag:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.uv]
+package = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "integration: requires Docker services such as Qdrant or OpenSearch",
+]
+
+

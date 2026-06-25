@@ -1,0 +1,24 @@
+﻿data_root: C:\vectorsearch-data\ko-unstructured
+embedding:
+  model_name: intfloat/multilingual-e5-small
+  batch_size: 64
+  device: cpu
+retrieval:
+  top_k: 10
+  candidate_k: 50
+  rrf_k: 60
+qdrant:
+  url: http://localhost:6333
+  collection: ko_unstructured_contextual_chunks
+opensearch:
+  url: http://localhost:9200
+  index: ko_unstructured_contextual_chunks
+  username: admin
+  password: admin
+rag:
+  provider: ollama
+  ollama_base_url: http://localhost:11434
+  ollama_model: llama3.1:8b-instruct-q4_K_M
+evaluation:
+  ragas_sample_size: 200
+  latency_percentiles: [50, 95]
