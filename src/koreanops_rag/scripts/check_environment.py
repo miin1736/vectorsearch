@@ -6,8 +6,9 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from urllib.parse import urlparse
 
-from koreanops_rag.config import load_config
+from koreanops_rag.config import AppConfig, load_config
 
 
 def _run(command: list[str]) -> tuple[bool, str]:
@@ -19,6 +20,40 @@ def _run(command: list[str]) -> tuple[bool, str]:
         return False, "timed out"
     output = (result.stdout or result.stderr).strip()
     return result.returncode == 0, output
+
+
+def _is_local_url(value: str) -> bool:
+    hostname = urlparse(value).hostname
+    return hostname in {"localhost", "127.0.0.1", "::1"}
+
+
+def _is_under(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _print_guardrail_warnings(config: AppConfig) -> None:
+    config_data_root = Path(config.data_root)
+    cache_vars = ["HF_HOME", "SENTENCE_TRANSFORMERS_HOME", "TORCH_HOME", "OLLAMA_MODELS"]
+    for name in cache_vars:
+        raw = os.getenv(name)
+        if not raw:
+            print(f"WARNING: {name} is not set; downloads may fall back to a user-profile cache.")
+            continue
+        if not _is_under(Path(raw), config_data_root):
+            print(f"WARNING: {name} is outside DATA_ROOT: {raw}")
+
+    for name, value in {
+        "QDRANT_URL": os.getenv("QDRANT_URL", config.qdrant.url),
+        "OPENSEARCH_URL": os.getenv("OPENSEARCH_URL", config.opensearch.url),
+    }.items():
+        if not _is_local_url(value):
+            print(f"WARNING: {name} is not local-only: {value}")
+
+    print("WARNING: OpenSearch security is disabled in docker-compose.yml for local experiments only.")
 
 
 def main() -> None:
@@ -34,6 +69,7 @@ def main() -> None:
     print(f"DATA_ROOT: {data_root}")
     for name in ["HF_HOME", "SENTENCE_TRANSFORMERS_HOME", "TORCH_HOME", "OLLAMA_MODELS"]:
         print(f"{name}: {os.getenv(name, 'not set')}")
+    _print_guardrail_warnings(config)
 
     docker_path = shutil.which("docker")
     print(f"Docker CLI: {docker_path or 'not installed'}")

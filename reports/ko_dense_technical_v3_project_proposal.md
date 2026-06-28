@@ -714,6 +714,8 @@ review_status
 - 실제 E5 tokenizer 길이 분석
 - 특허 section parser 구현
 - Fixed/Page/Section 청킹 smoke
+- `experiments/ko_dense_technical_v3/test_cases.yaml` 기반 테스트 케이스 registry 검증
+- `koreanops-v3-cases` CLI로 case manifest와 결과 matrix 생성
 - 문장·passage·section multi-granularity ID와 parent 관계 생성
 - evidence 위치와 IPC/CPC metadata 검증
 

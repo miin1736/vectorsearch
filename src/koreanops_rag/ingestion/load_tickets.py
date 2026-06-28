@@ -2,13 +2,14 @@ from __future__ import annotations
 
 from datetime import datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterator
 
 import pandas as pd
 import typer
 import yaml
 
 from koreanops_rag.io import write_jsonl
+from koreanops_rag.observability import RunRecorder, default_reports_dir
 from koreanops_rag.schemas import Ticket
 from koreanops_rag.text import clean_text, normalize_choice, split_tags
 
@@ -49,8 +50,7 @@ def iter_tickets(
     mapping: dict[str, Any],
     limit: int | None = None,
     chunksize: int = 10_000,
-) -> list[Ticket]:
-    tickets: list[Ticket] = []
+) -> Iterator[Ticket]:
     produced = 0
     for chunk in pd.read_csv(input_csv, chunksize=chunksize):
         for _, row in chunk.iterrows():
@@ -59,33 +59,30 @@ def iter_tickets(
             description = clean_text(_get(row, mapping, "description"))
             resolution = clean_text(_get(row, mapping, "resolution"))
             raw_text = " ".join(part for part in [subject, description, resolution] if part)
-            tickets.append(
-                Ticket(
-                    ticket_id=ticket_id,
-                    source_dataset=source_dataset,
-                    created_at=_parse_datetime(_get(row, mapping, "created_at")),
-                    ticket_type=normalize_choice(
-                        _get(row, mapping, "ticket_type"), TICKET_TYPES
-                    ),  # type: ignore[arg-type]
-                    priority=normalize_choice(
-                        _get(row, mapping, "priority"), PRIORITIES
-                    ),  # type: ignore[arg-type]
-                    queue=clean_text(_get(row, mapping, "queue")),
-                    business_type=clean_text(_get(row, mapping, "business_type")),
-                    subject=subject,
-                    description=description,
-                    resolution=resolution,
-                    tags=split_tags(_get(row, mapping, "tags")),
-                    status=normalize_choice(
-                        _get(row, mapping, "status"), STATUSES
-                    ),  # type: ignore[arg-type]
-                    raw_text=raw_text,
-                )
+            yield Ticket(
+                ticket_id=ticket_id,
+                source_dataset=source_dataset,
+                created_at=_parse_datetime(_get(row, mapping, "created_at")),
+                ticket_type=normalize_choice(
+                    _get(row, mapping, "ticket_type"), TICKET_TYPES
+                ),  # type: ignore[arg-type]
+                priority=normalize_choice(
+                    _get(row, mapping, "priority"), PRIORITIES
+                ),  # type: ignore[arg-type]
+                queue=clean_text(_get(row, mapping, "queue")),
+                business_type=clean_text(_get(row, mapping, "business_type")),
+                subject=subject,
+                description=description,
+                resolution=resolution,
+                tags=split_tags(_get(row, mapping, "tags")),
+                status=normalize_choice(
+                    _get(row, mapping, "status"), STATUSES
+                ),  # type: ignore[arg-type]
+                raw_text=raw_text,
             )
             produced += 1
             if limit and produced >= limit:
-                return tickets
-    return tickets
+                return
 
 
 @app.command()
@@ -96,10 +93,24 @@ def run(
     mapping_file: Path = Path("configs/ticket_columns.yaml"),
     dataset_key: str = "default",
     limit: int | None = None,
+    run_id: str | None = None,
 ) -> None:
     """Normalize a Kaggle ticket CSV into the standard Ticket JSONL schema."""
     mapping = load_mapping(mapping_file, dataset_key)
-    count = write_jsonl(output_jsonl, iter_tickets(input_csv, source_dataset, mapping, limit=limit))
+    with RunRecorder(
+        "load_tickets",
+        default_reports_dir(),
+        run_id=run_id,
+        command="koreanops-load-tickets",
+        config_path=mapping_file,
+        input_paths=[input_csv, mapping_file],
+        output_paths=[output_jsonl],
+    ) as recorder:
+        count = write_jsonl(
+            output_jsonl,
+            iter_tickets(input_csv, source_dataset, mapping, limit=limit),
+        )
+        recorder.set_record_count(count)
     typer.echo(f"Wrote {count} tickets to {output_jsonl}")
 
 

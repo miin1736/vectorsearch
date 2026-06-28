@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import zipfile
 from collections import defaultdict
 from pathlib import Path
@@ -13,6 +14,7 @@ from koreanops_rag.io import read_jsonl
 from koreanops_rag.office.common import document_id, document_type_from_archive, split_from_path
 
 app = typer.Typer(add_completion=False)
+REFERENCE_ONLY_RE = re.compile(r"^(?:\s*\[&\][^\s]+\s*)+$")
 
 
 def _element_text(learning: dict[str, Any]) -> str:
@@ -22,6 +24,38 @@ def _element_text(learning: dict[str, Any]) -> str:
         or learning.get("document_description")
         or ""
     ).strip()
+
+
+def _is_reference_only(value: str) -> bool:
+    """Return whether a label value only points at other annotation JSON files."""
+    return bool(value.strip() and REFERENCE_ONLY_RE.fullmatch(value.strip()))
+
+
+def _page_texts(elements: list[dict[str, Any]]) -> tuple[str, str, str]:
+    """Build semantic page content and a PDF-text-only parsing reference."""
+    d01 = next(
+        (
+            item["document_description"]
+            for item in elements
+            if item["class_name"] == "D01" and item["document_description"]
+        ),
+        "",
+    )
+    plain_text = "\n".join(
+        item["plain_text"]
+        for item in elements
+        if item["plain_text"] and item["class_name"] != "D01"
+    )
+    visual_text = "\n".join(
+        item["visual_description"] for item in elements if item["visual_description"]
+    )
+    if d01 and not _is_reference_only(d01):
+        return d01, d01, "document_description"
+    if plain_text:
+        return plain_text, plain_text, "plain_text"
+    if visual_text:
+        return visual_text, "", "visual_description"
+    return "", "", "empty"
 
 
 @app.command()
@@ -117,23 +151,16 @@ def run(
                         item["bbox"][0] if item["bbox"] else 0,
                     ),
                 )
-                d01 = next(
-                    (
-                        item["document_description"]
-                        for item in elements
-                        if item["class_name"] == "D01" and item["document_description"]
-                    ),
-                    "",
-                )
-                plain_text = "\n".join(
-                    item["plain_text"]
-                    for item in elements
-                    if item["plain_text"] and item["class_name"] != "D01"
-                )
-                page_text = d01 or plain_text
+                page_text, parsing_reference_text, oracle_text_type = _page_texts(elements)
                 page_texts.append(page_text)
                 page_file.write(json.dumps(
-                    {"doc_id": doc_id, "page_num": page_num, "content": page_text},
+                    {
+                        "doc_id": doc_id,
+                        "page_num": page_num,
+                        "content": page_text,
+                        "parsing_reference_text": parsing_reference_text,
+                        "oracle_text_type": oracle_text_type,
+                    },
                     ensure_ascii=False,
                 ) + "\n")
                 for item in elements:

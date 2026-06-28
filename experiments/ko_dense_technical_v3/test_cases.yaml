@@ -1,0 +1,327 @@
+project_id: ko_dense_technical_v3
+data_root: C:\vectorsearch-data\ko-dense-technical
+namespace_prefix: ko_dense_technical_v3_
+default_golden_set_version: v3_manual_reviewed_300
+case_groups:
+  - baseline
+  - tokenizer
+  - granularity
+  - parent_child
+  - graph
+  - hybrid_rerank
+  - adaptive
+  - domain_scope
+  - late_interaction
+  - corrective
+  - ann
+  - robustness
+  - deferred
+test_cases:
+  - case_id: baseline_fixed_512
+    stage: smoke
+    group: baseline
+    technique: fixed_512_chunking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_fixed_512
+    chunking_profile: fixed_512_overlap_64
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/baseline_fixed_512.jsonl
+      - eval/cases/baseline_fixed_512_summary.csv
+
+  - case_id: baseline_page_subchunk
+    stage: smoke
+    group: baseline
+    technique: page_subchunking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_page_subchunk
+    chunking_profile: page_then_tokenizer_subchunk
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/baseline_page_subchunk.jsonl
+      - eval/cases/baseline_page_subchunk_summary.csv
+
+  - case_id: baseline_section
+    stage: smoke
+    group: baseline
+    technique: patent_section_chunking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_section
+    chunking_profile: patent_section_max_480_e5_tokens
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/baseline_section.jsonl
+      - eval/cases/baseline_section_summary.csv
+
+  - case_id: tokenizer_aware_fixed_512
+    stage: smoke
+    group: tokenizer
+    technique: tokenizer_aware_chunking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_tokenizer_fixed
+    chunking_profile: e5_tokenizer_512_overlap_64
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: truncation_and_retrieval
+    expected_artifacts:
+      - processed/chunks/tokenizer_aware_fixed_512.jsonl
+      - eval/cases/tokenizer_aware_fixed_512_summary.csv
+
+  - case_id: truncation_audit_e5
+    stage: smoke
+    group: tokenizer
+    technique: embedding_input_truncation_audit
+    enabled: true
+    index_namespace: ko_dense_technical_v3_truncation_audit
+    chunking_profile: audit_only
+    retriever_profile: none
+    reranker_profile: none
+    evaluation_profile: tokenizer_length_distribution
+    expected_artifacts:
+      - eval/cases/truncation_audit_e5_summary.csv
+
+  - case_id: granularity_sentence
+    stage: pilot
+    group: granularity
+    technique: sentence_level_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_sentence
+    chunking_profile: sentence_96_192_e5_tokens
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/granularity_sentence.jsonl
+      - eval/cases/granularity_sentence_summary.csv
+
+  - case_id: granularity_passage
+    stage: pilot
+    group: granularity
+    technique: passage_level_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_passage
+    chunking_profile: passage_320_384_e5_tokens
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/granularity_passage.jsonl
+      - eval/cases/granularity_passage_summary.csv
+
+  - case_id: granularity_section
+    stage: pilot
+    group: granularity
+    technique: section_level_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_section_pilot
+    chunking_profile: patent_section_max_480_e5_tokens
+    retriever_profile: dense_vector
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/chunks/granularity_section.jsonl
+      - eval/cases/granularity_section_summary.csv
+
+  - case_id: hierarchical_sentence_passage_section
+    stage: pilot
+    group: granularity
+    technique: multi_granularity_hierarchical_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_hierarchical
+    chunking_profile: sentence_passage_section_tree
+    retriever_profile: hierarchical_dense
+    reranker_profile: parent_score_aggregation
+    evaluation_profile: retrieval_context_efficiency
+    expected_artifacts:
+      - processed/chunks/hierarchical_sentence_passage_section.jsonl
+      - eval/cases/hierarchical_sentence_passage_section_summary.csv
+
+  - case_id: parent_child_child_search_section_context
+    stage: pilot
+    group: parent_child
+    technique: parent_child_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_parent_child
+    chunking_profile: child_passage_parent_section
+    retriever_profile: child_dense_parent_context
+    reranker_profile: parent_score_aggregation
+    evaluation_profile: retrieval_context_efficiency
+    expected_artifacts:
+      - processed/chunks/parent_child_child_search_section_context.jsonl
+      - eval/cases/parent_child_child_search_section_context_summary.csv
+
+  - case_id: graph_1hop_section_rerank
+    stage: pilot
+    group: graph
+    technique: chunk_section_graph_reranking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_graph_1hop
+    chunking_profile: section_graph_edges
+    retriever_profile: rrf_seed_candidates
+    reranker_profile: one_hop_section_graph
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - processed/graphs/section_graph_edges.jsonl
+      - eval/cases/graph_1hop_section_rerank_summary.csv
+
+  - case_id: hybrid_rrf
+    stage: pilot
+    group: hybrid_rerank
+    technique: rrf_hybrid_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_hybrid_rrf
+    chunking_profile: best_available_from_smoke
+    retriever_profile: bm25_dense_rrf
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - eval/cases/hybrid_rrf_summary.csv
+
+  - case_id: hybrid_weighted
+    stage: pilot
+    group: hybrid_rerank
+    technique: weighted_hybrid_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_hybrid_weighted
+    chunking_profile: best_available_from_smoke
+    retriever_profile: bm25_dense_weighted
+    reranker_profile: none
+    evaluation_profile: retrieval_core
+    expected_artifacts:
+      - eval/cases/hybrid_weighted_summary.csv
+
+  - case_id: cross_encoder_rerank_top50
+    stage: pilot
+    group: hybrid_rerank
+    technique: cross_encoder_reranking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_cross_encoder_top50
+    chunking_profile: best_available_from_smoke
+    retriever_profile: rrf_top_100
+    reranker_profile: cpu_cross_encoder_top_50
+    evaluation_profile: reranker_cost_quality
+    expected_artifacts:
+      - eval/cases/cross_encoder_rerank_top50_summary.csv
+
+  - case_id: adaptive_k_score_tail
+    stage: pilot
+    group: adaptive
+    technique: query_adaptive_k
+    enabled: true
+    index_namespace: ko_dense_technical_v3_adaptive_k
+    chunking_profile: best_available_from_smoke
+    retriever_profile: adaptive_k_score_tail
+    reranker_profile: optional_best_pilot
+    evaluation_profile: context_efficiency
+    expected_artifacts:
+      - eval/cases/adaptive_k_score_tail_summary.csv
+
+  - case_id: ipc_cpc_soft_boost
+    stage: pilot
+    group: domain_scope
+    technique: ipc_cpc_domain_scoped_retrieval
+    enabled: true
+    index_namespace: ko_dense_technical_v3_ipc_cpc_soft_boost
+    chunking_profile: best_available_from_smoke
+    retriever_profile: ipc_cpc_soft_boost
+    reranker_profile: none
+    evaluation_profile: hard_negative_rejection
+    expected_artifacts:
+      - eval/cases/ipc_cpc_soft_boost_summary.csv
+
+  - case_id: late_interaction_top50_subset
+    stage: pilot
+    group: late_interaction
+    technique: late_interaction_reranking
+    enabled: true
+    index_namespace: ko_dense_technical_v3_late_interaction
+    chunking_profile: best_available_from_smoke
+    retriever_profile: rrf_top_100
+    reranker_profile: late_interaction_top_50_subset
+    evaluation_profile: reranker_cost_quality
+    expected_artifacts:
+      - eval/cases/late_interaction_top50_subset_summary.csv
+
+  - case_id: corrective_rag_single_retry
+    stage: full
+    group: corrective
+    technique: corrective_rag_single_retry
+    enabled: true
+    index_namespace: ko_dense_technical_v3_corrective_rag
+    chunking_profile: best_pilot
+    retriever_profile: retry_on_low_evidence_sufficiency
+    reranker_profile: best_pilot
+    evaluation_profile: rag_retrieval_recovery
+    expected_artifacts:
+      - eval/cases/corrective_rag_single_retry_summary.csv
+
+  - case_id: ann_hnsw_quality_latency
+    stage: full
+    group: ann
+    technique: qdrant_hnsw_tuning
+    enabled: true
+    index_namespace: ko_dense_technical_v3_ann_hnsw
+    chunking_profile: best_pilot
+    retriever_profile: hnsw_parameter_grid
+    reranker_profile: none
+    evaluation_profile: quality_latency
+    expected_artifacts:
+      - eval/cases/ann_hnsw_quality_latency_summary.csv
+
+  - case_id: clean_misleading_mixed_evidence
+    stage: full
+    group: robustness
+    technique: misleading_evidence_reliability
+    enabled: true
+    index_namespace: ko_dense_technical_v3_robustness
+    chunking_profile: best_pilot
+    retriever_profile: best_pilot
+    reranker_profile: best_pilot
+    evaluation_profile: rag_reliability
+    expected_artifacts:
+      - eval/cases/clean_misleading_mixed_evidence_summary.csv
+
+  - case_id: deferred_dream_retriever_training
+    stage: deferred
+    group: deferred
+    technique: dream_retriever_training
+    enabled: false
+    reason: Requires retriever training resources and is outside the first V3 scope.
+    index_namespace: ko_dense_technical_v3_deferred_dream
+    chunking_profile: not_applicable
+    retriever_profile: trainable_dense_retriever
+    reranker_profile: none
+    evaluation_profile: deferred
+    expected_artifacts: []
+
+  - case_id: deferred_embedding_compression_pq
+    stage: deferred
+    group: deferred
+    technique: embedding_compression_pq
+    enabled: false
+    reason: Run after retrieval quality baseline is stable.
+    index_namespace: ko_dense_technical_v3_deferred_pq
+    chunking_profile: best_pilot
+    retriever_profile: compressed_embedding_index
+    reranker_profile: none
+    evaluation_profile: deferred
+    expected_artifacts: []
+
+  - case_id: deferred_multimodal_reranker
+    stage: deferred
+    group: deferred
+    technique: multimodal_reranker
+    enabled: false
+    reason: Patent figures and drawings are a separate multimodal project.
+    index_namespace: ko_dense_technical_v3_deferred_multimodal
+    chunking_profile: not_applicable
+    retriever_profile: multimodal
+    reranker_profile: multimodal
+    evaluation_profile: deferred
+    expected_artifacts: []

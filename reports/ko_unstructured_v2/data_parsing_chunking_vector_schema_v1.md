@@ -207,9 +207,13 @@ Pilot 100의 Oracle 비교 결과:
 | 지표 | 결과 |
 | --- | ---: |
 | 페이지 추출 성공률 | 1.0000 |
-| 문자 precision | 0.7782 |
-| 문자 recall | 0.8596 |
-| normalized edit similarity | 0.8090 |
+| 문자 precision | 0.6696 |
+| 문자 recall | 0.7421 |
+| normalized edit similarity | 0.6933 |
+
+문자 품질은 PDF 텍스트와 직접 비교할 수 있는 Oracle 265페이지만 대상으로 한다. 이미지
+설명 또는 다른 annotation JSON 참조만 있는 379페이지는 검색·Golden Set용 의미 정보에는
+포함하지만 문자 단위 파싱 정확도 계산에서는 제외한다.
 
 따라서 현재 파서는 모든 페이지에서 텍스트를 얻지만, 읽기 순서·중복·줄 연결·표 구조에는
 개선 여지가 있다.

@@ -9,7 +9,7 @@ from typing import Any
 
 import typer
 
-from koreanops_rag.io import read_jsonl, write_jsonl
+from koreanops_rag.io import ensure_parent, read_jsonl
 from koreanops_rag.rag.llm_provider import OllamaProvider
 from koreanops_rag.schemas import GoldenQuestion
 
@@ -103,6 +103,7 @@ def run(
     sample_size: int = 300,
     seed: int = 42,
     use_ollama: bool = False,
+    resume: bool = False,
     ollama_base_url: str = "http://localhost:11434",
     ollama_model: str = "llama3.1:8b-instruct-q4_K_M",
 ) -> None:
@@ -122,56 +123,68 @@ def run(
         key = (metadata.get("document_type", ""), metadata.get("publisher", ""))
         titles_by_group[key].append(document)
 
-    rows = []
+    ensure_parent(output_jsonl)
+    existing_rows = list(read_jsonl(output_jsonl)) if resume and output_jsonl.exists() else []
+    completed = len(existing_rows)
+    mode = "a" if completed else "w"
     type_counts: Counter[str] = Counter()
-    for index, document in enumerate(selected):
-        doc_pages = sorted(pages.get(document["doc_id"], []), key=lambda row: row["page_num"])
-        if not doc_pages:
-            continue
-        page = max(doc_pages, key=lambda row: len(str(row.get("content", ""))))
-        evidence = _evidence_segment(str(page["content"]).strip())
-        question_type = QUESTION_TYPES[index % len(QUESTION_TYPES)]
-        if provider:
-            try:
-                question, answer = _ollama_candidate(
-                    provider, document.get("title", ""), evidence, question_type
-                )
-            except Exception as exc:
-                typer.echo(
-                    f"Question {index + 1}: Ollama generation failed, using fallback: {exc}",
-                    err=True,
-                )
+    with output_jsonl.open(mode, encoding="utf-8", newline="\n") as output:
+        for index, document in enumerate(selected):
+            if index < completed:
+                continue
+            doc_pages = sorted(
+                pages.get(document["doc_id"], []), key=lambda row: row["page_num"]
+            )
+            if not doc_pages:
+                continue
+            page = max(doc_pages, key=lambda row: len(str(row.get("content", ""))))
+            evidence = _evidence_segment(str(page["content"]).strip())
+            question_type = QUESTION_TYPES[index % len(QUESTION_TYPES)]
+            if provider:
+                try:
+                    question, answer = _ollama_candidate(
+                        provider, document.get("title", ""), evidence, question_type
+                    )
+                except Exception as exc:
+                    typer.echo(
+                        f"Question {index + 1}: Ollama generation failed, using fallback: {exc}",
+                        err=True,
+                    )
+                    question, answer = _fallback_candidate(
+                        document.get("title", ""), evidence, question_type
+                    )
+            else:
                 question, answer = _fallback_candidate(
                     document.get("title", ""), evidence, question_type
                 )
-        else:
-            question, answer = _fallback_candidate(
-                document.get("title", ""), evidence, question_type
+            metadata = document.get("metadata", {})
+            group = titles_by_group[
+                (metadata.get("document_type", ""), metadata.get("publisher", ""))
+            ]
+            negatives = [
+                candidate["doc_id"]
+                for candidate in group
+                if candidate["doc_id"] != document["doc_id"]
+            ][:3]
+            row = GoldenQuestion(
+                question_id=f"office_q_{index + 1:04d}",
+                question=question,
+                reference_answer=answer,
+                gold_doc_ids=[document["doc_id"]],
+                gold_pages=[int(page["page_num"])],
+                evidence_text=evidence,
+                question_type=question_type,
+                lexical_overlap=lexical_overlap(question, evidence),
+                hard_negative_doc_ids=negatives,
             )
-        metadata = document.get("metadata", {})
-        group = titles_by_group[
-            (metadata.get("document_type", ""), metadata.get("publisher", ""))
-        ]
-        negatives = [
-            candidate["doc_id"]
-            for candidate in group
-            if candidate["doc_id"] != document["doc_id"]
-        ][:3]
-        row = GoldenQuestion(
-            question_id=f"office_q_{index + 1:04d}",
-            question=question,
-            reference_answer=answer,
-            gold_doc_ids=[document["doc_id"]],
-            gold_pages=[int(page["page_num"])],
-            evidence_text=evidence,
-            question_type=question_type,
-            lexical_overlap=lexical_overlap(question, evidence),
-            hard_negative_doc_ids=negatives,
-        )
-        rows.append(row)
-        type_counts[question_type] += 1
-    count = write_jsonl(output_jsonl, rows)
-    typer.echo(f"Wrote {count} review-pending Golden Set candidates: {dict(type_counts)}")
+            output.write(json.dumps(row.model_dump(mode="json"), ensure_ascii=False) + "\n")
+            output.flush()
+            type_counts[question_type] += 1
+            if (index + 1) % 10 == 0:
+                typer.echo(f"Generated {index + 1}/{len(selected)} Golden questions...")
+    typer.echo(
+        f"Wrote {len(selected)} review-pending Golden Set candidates: {dict(type_counts)}"
+    )
 
 
 def main() -> None:

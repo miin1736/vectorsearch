@@ -72,16 +72,21 @@ def evaluate_method(method: str, retriever, questions: list[dict], top_k: int) -
         results = _dedupe_parents(retriever.search(question["question"], top_k=top_k * 5))
         latency_ms = (time.perf_counter() - started) * 1000
         results = results[:top_k]
-        retrieved = [_parent_id(result) for result in results]
         gold_docs = set(question.get("gold_doc_ids", []))
         gold_pages = set(int(page) for page in question.get("gold_pages", []))
-        relevant = [
-            result
+        relevance = [
+            _parent_id(result) in gold_docs and _page_overlap(result, gold_pages)
             for result in results
-            if _parent_id(result) in gold_docs and _page_overlap(result, gold_pages)
+        ]
+        relevant = [
+            result for result, is_relevant in zip(results, relevance) if is_relevant
+        ]
+        metric_ids = [
+            _parent_id(result) if is_relevant else f"__nonrelevant_{index}"
+            for index, (result, is_relevant) in enumerate(zip(results, relevance))
         ]
         rank = next(
-            (index for index, doc_id in enumerate(retrieved, start=1) if doc_id in gold_docs),
+            (index for index, is_relevant in enumerate(relevance, start=1) if is_relevant),
             0,
         )
         rows.append(
@@ -90,10 +95,10 @@ def evaluate_method(method: str, retriever, questions: list[dict], top_k: int) -
                 "question_type": question.get("question_type", "unknown"),
                 "method": method,
                 "rank": rank,
-                "recall_at_5": float(any(doc_id in gold_docs for doc_id in retrieved[:5])),
-                "recall_at_10": float(any(doc_id in gold_docs for doc_id in retrieved[:10])),
-                "reciprocal_rank": reciprocal_rank(retrieved, gold_docs),
-                "ndcg_at_10": ndcg_at_k(retrieved, gold_docs, 10),
+                "recall_at_5": float(any(relevance[:5])),
+                "recall_at_10": float(any(relevance[:10])),
+                "reciprocal_rank": reciprocal_rank(metric_ids, gold_docs),
+                "ndcg_at_10": ndcg_at_k(metric_ids, gold_docs, 10),
                 "context_precision_at_10": len(relevant) / max(len(results), 1),
                 "context_recall_at_10": float(bool(relevant)),
                 "latency_ms": latency_ms,

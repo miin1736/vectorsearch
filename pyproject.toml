@@ -47,10 +47,12 @@ koreanops-office-parse = "koreanops_rag.office.parse_pdfs:main"
 koreanops-office-build-oracle = "koreanops_rag.office.build_oracle:main"
 koreanops-office-build-chunks = "koreanops_rag.office.chunking:main"
 koreanops-office-build-golden = "koreanops_rag.office.golden_set:main"
+koreanops-office-review-golden = "koreanops_rag.office.review_golden:main"
 koreanops-office-eval-parsing = "koreanops_rag.office.evaluate_parsing:main"
 koreanops-office-eval-chunking = "koreanops_rag.office.evaluate_chunking:main"
 koreanops-office-eval-retrieval = "koreanops_rag.office.evaluate_retrieval:main"
 koreanops-office-eval-rag = "koreanops_rag.office.evaluate_rag:main"
+koreanops-v3-cases = "koreanops_rag.v3.test_cases:main"
 
 [build-system]
 requires = ["hatchling"]

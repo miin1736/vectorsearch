@@ -48,10 +48,17 @@ def run(
         )
         for row in read_jsonl(parsed_pages_jsonl)
     }
-    oracle = {
-        (row["doc_id"], int(row["page_num"])): str(row.get("content") or "")
-        for row in read_jsonl(oracle_pages_jsonl)
-    }
+    oracle = {}
+    skipped_non_text_pages = 0
+    for row in read_jsonl(oracle_pages_jsonl):
+        reference = str(row.get("parsing_reference_text") or row.get("content") or "")
+        if row.get("parsing_reference_text") == "" and row.get("oracle_text_type") in {
+            "visual_description",
+            "empty",
+        }:
+            skipped_non_text_pages += 1
+            continue
+        oracle[(row["doc_id"], int(row["page_num"]))] = reference
     ensure_parent(details_csv)
     rows = []
     by_document: dict[str, list[dict]] = defaultdict(list)
@@ -93,6 +100,7 @@ def run(
                 "# PDF Parsing Quality",
                 "",
                 f"- Oracle pages: {len(rows):,}",
+                f"- Skipped non-text Oracle pages: {skipped_non_text_pages:,}",
                 f"- Documents: {len(by_document):,}",
                 f"- Character precision: {means['character_precision']:.4f}",
                 f"- Character recall: {means['character_recall']:.4f}",

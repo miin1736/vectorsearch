@@ -14,10 +14,11 @@ The active experiment is `ko_unstructured_v2`, based on AI Hub
 - 9,491 PDFs and 9,491 matching label documents have been inventoried.
 - Label JSON is used only as evaluation Oracle data, never to build the production corpus.
 - Fixed, Page, Structure, Contextual, and Oracle chunk pipelines are implemented.
-- A stratified 100-document pilot has been parsed, indexed, and evaluated.
-- Vector retrieval currently leads BM25 and Hybrid on the provisional 30-question pilot.
-- Page and Structure are the strongest practical chunk variants so far.
-- The next step is manual Golden Set review followed by a 1,000-document pilot.
+- All 9,491 PDFs have been parsed and indexed for the Page and Structure variants.
+- Full retrieval evaluation uses 294 auto-approved questions after deterministic Golden Set review.
+- Structure Vector is the current winner with Recall@10 `0.5680`, versus Page Vector `0.4626`.
+- A 200-question grounded RAG evaluation is complete; the current bottleneck is top-5 evidence
+  recall rather than citation plumbing.
 
 These pilot results are provisional. See
 [`experiments/ko_unstructured_v2/OFFICE_PDF_STATUS.md`](experiments/ko_unstructured_v2/OFFICE_PDF_STATUS.md)
@@ -154,6 +155,7 @@ The Office PDF workflow also includes:
 
 - `koreanops-office-build-oracle`
 - `koreanops-office-build-golden`
+- `koreanops-office-review-golden`
 - `koreanops-office-eval-parsing`
 - `koreanops-office-eval-chunking`
 - `koreanops-office-eval-retrieval`
