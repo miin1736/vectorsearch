@@ -32,6 +32,7 @@ class OpenSearchConfig(BaseModel):
     index: str = "koreanops_documents"
     username: str = "admin"
     password: str = "admin"
+    search_field: str = "content"
 
 
 class RagConfig(BaseModel):

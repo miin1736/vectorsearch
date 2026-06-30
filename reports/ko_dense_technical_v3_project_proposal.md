@@ -2,7 +2,28 @@
 
 작성일: 2026-06-25  
 프로젝트명: `ko_dense_technical_v3`  
-추천 데이터: 한국 특허·실용신안 명세서 PDF
+추천 데이터: AIHub 학술논문 이해 데이터 PDF
+
+## 0. 2026-06-28 데이터 교체 결정
+
+기존 V3 제안서는 한국 특허 명세서를 주 데이터로 가정했으나, 특허 데이터 확보에 비용이
+발생하므로 해당 가정은 폐기한다. V3 실험 구조, namespace, case matrix, profile registry,
+runner는 유지하고 **주 데이터만 AIHub `학술논문 이해 데이터`의 한국어 학술논문 PDF**로
+교체한다.
+
+현재 유효한 데이터 매핑은 다음과 같다.
+
+| 기존 특허 계획 | 변경 후 학술논문 계획 |
+| --- | --- |
+| 특허 명세서 PDF | AIHub 학술논문 PDF |
+| patent section | paper section |
+| claim | abstract / introduction / method / result / conclusion / evidence paragraph |
+| IPC/CPC | research_field / paper_topic / keyword / publication_year |
+| claim support edge | section_transition / citation_or_keyword_related / same_topic_related |
+| 같은 IPC/CPC hard negative | 같은 연구분야·유사 키워드 hard negative |
+
+따라서 아래 문서에서 특허, IPC/CPC, claim이라는 표현이 남아 있더라도 구현 기준은 이
+교체 결정과 `experiments/ko_dense_technical_v3/TEST_CASE_MANAGEMENT.md`를 우선한다.
 
 ## 1. 제안 배경
 

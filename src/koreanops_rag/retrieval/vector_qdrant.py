@@ -1,8 +1,23 @@
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import Any
 
 from koreanops_rag.schemas import SearchResult
+
+
+def ensure_model_cache_env() -> None:
+    """Keep local model downloads under DATA_ROOT when the shell env is not loaded."""
+    data_root = Path(os.environ.get("DATA_ROOT", r"C:\vectorsearch-data"))
+    defaults = {
+        "HF_HOME": data_root / "models" / "huggingface",
+        "SENTENCE_TRANSFORMERS_HOME": data_root / "models" / "huggingface" / "sentence-transformers",
+        "TORCH_HOME": data_root / "cache" / "torch",
+    }
+    for name, path in defaults.items():
+        os.environ.setdefault(name, str(path))
+        Path(os.environ[name]).mkdir(parents=True, exist_ok=True)
 
 
 class SentenceTransformerEmbedder:
@@ -13,6 +28,7 @@ class SentenceTransformerEmbedder:
         document_prefix: str = "",
         query_prefix: str = "",
     ):
+        ensure_model_cache_env()
         from sentence_transformers import SentenceTransformer
 
         self.model = SentenceTransformer(model_name, device=device)

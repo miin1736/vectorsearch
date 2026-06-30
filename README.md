@@ -165,6 +165,125 @@ These commands cover evaluation-only Oracle generation, Golden Set creation, par
 quality checks, retrieval evaluation with bootstrap confidence intervals, and grounded RAG
 evaluation. Run any CLI with `--help` for its exact arguments.
 
+## Data Engineering Pipeline
+
+The data-engineering layer is an opt-in, no-cost, local-only extension for
+`ko_unstructured_v2`. It does not provision AWS resources, does not require AWS credentials,
+and does not change the existing Qdrant, OpenSearch, or OpenSearch Dashboards workflow.
+
+The local stack mirrors common AWS data-engineering concepts without using AWS:
+
+| Local component | AWS-style equivalent | Purpose |
+| --- | --- | --- |
+| MinIO | S3 | S3-compatible object-store practice |
+| Airflow | MWAA | DAG orchestration practice |
+| Spark | EMR or Glue | JSONL to Parquet and mart transforms |
+| PostgreSQL | RDS PostgreSQL | Airflow metadata DB |
+| Parquet lake | S3 data lake / Athena target | processed and mart tables |
+
+Start the isolated data-engineering services explicitly:
+
+```powershell
+docker compose --profile data-engineering up -d `
+  airflow-postgres airflow-webserver airflow-scheduler `
+  spark-master spark-worker minio
+```
+
+This profile exposes:
+
+- Airflow UI: `http://localhost:8080`
+- Spark master UI: `http://localhost:8081`
+- Spark worker UI: `http://localhost:8082`
+- MinIO API: `http://localhost:9000`
+- MinIO Console: `http://localhost:9001`
+
+The existing OpenSearch Dashboards profile remains separate:
+
+```powershell
+docker compose --profile dashboard up -d
+```
+
+Data lake zones stay outside the repository:
+
+```text
+C:\vectorsearch-data\ko-unstructured
+  raw\
+  processed\
+  eval\
+  lake\
+    processed\
+    mart\
+
+C:\vectorsearch-data\data-engineering
+  airflow\
+  spark\
+  minio\
+  postgres\
+```
+
+Convert the current v2 JSONL artifacts to Parquet:
+
+```powershell
+uv run koreanops-office-jsonl-to-parquet `
+  --data-root C:\vectorsearch-data\ko-unstructured
+```
+
+Run read-only data quality checks:
+
+```powershell
+uv run koreanops-office-data-quality `
+  --data-root C:\vectorsearch-data\ko-unstructured
+```
+
+The report is written to both:
+
+- `reports/ko_unstructured_v2/data_quality_report.md`
+- `C:\vectorsearch-data\ko-unstructured\reports\data_quality_report.md`
+
+Build mart Parquet tables:
+
+```powershell
+uv run koreanops-office-build-mart `
+  --data-root C:\vectorsearch-data\ko-unstructured
+```
+
+Write retrieval/RAG evaluation marts from summary CSV outputs:
+
+```powershell
+uv run koreanops-office-write-eval-mart `
+  C:\vectorsearch-data\ko-unstructured\eval\full\retrieval_structure_summary.csv `
+  --rag-summary-csv C:\vectorsearch-data\ko-unstructured\eval\full\rag_structure_vector_200_summary.csv `
+  --data-root C:\vectorsearch-data\ko-unstructured
+```
+
+Generated mart tables:
+
+- `dim_document`
+- `fact_pdf_parse_quality`
+- `fact_chunk_quality`
+- `fact_indexing_result`
+- `fact_retrieval_eval`
+- `fact_rag_eval`
+
+Data quality checks include:
+
+- manifest count versus normalized document count
+- empty normalized document content count
+- chunk `metadata.parent_doc_id` exists in documents
+- duplicate chunk id detection
+- `metadata.page_start <= metadata.page_end`
+- Qdrant `points_count` versus chunk input count
+- OpenSearch `_count` versus chunk input count
+
+The Airflow DAGs are manual-trigger only:
+
+- `office_pdf_etl`
+- `retrieval_evaluation`
+
+They call the same `uv run koreanops-office-*` commands documented above and are intended for
+local orchestration practice. They should not be used to mutate or recreate existing
+Qdrant/OpenSearch indexes unless you intentionally trigger the indexing DAG tasks.
+
 ## Historical Ticket/Log Pipeline
 
 Normalize tickets and logs:

@@ -8,6 +8,13 @@ from koreanops_rag.config import load_config
 V2_CONFIG_DIR = Path("experiments/ko_unstructured_v2/configs")
 V2_STAGES = ["raw", "cleaned", "normalized", "contextual_chunks"]
 PDF_STAGES = ["fixed", "page", "structure", "contextual", "oracle"]
+V3_CONFIG_DIR = Path("experiments/ko_dense_technical_v3/configs")
+V3_SMOKE_CONFIGS = {
+    "baseline_fixed_512": "ko_dense_technical_v3_fixed_512",
+    "baseline_page_subchunk": "ko_dense_technical_v3_page_subchunk",
+    "baseline_section": "ko_dense_technical_v3_section",
+    "tokenizer_aware_fixed_512": "ko_dense_technical_v3_tokenizer_fixed",
+}
 
 
 def test_ko_unstructured_v2_configs_use_isolated_namespace():
@@ -48,3 +55,14 @@ def test_default_config_can_still_use_environment_data_root(monkeypatch, tmp_pat
     config = load_config(config_path)
 
     assert config.data_root == Path(r"C:\vectorsearch-data\override")
+
+
+def test_ko_dense_technical_v3_smoke_configs_use_isolated_namespace():
+    for config_name, namespace in V3_SMOKE_CONFIGS.items():
+        path = V3_CONFIG_DIR / f"{config_name}.yaml"
+        raw = yaml.safe_load(path.read_text(encoding="utf-8"))
+
+        assert raw["data_root"] == r"C:\vectorsearch-data\ko-dense-technical"
+        assert raw["qdrant"]["collection"] == namespace
+        assert raw["opensearch"]["index"] == namespace
+        assert namespace.startswith("ko_dense_technical_v3_")

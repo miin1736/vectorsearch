@@ -1,0 +1,419 @@
+schema_version: 1
+projects:
+  - project_id: koreanops_v1
+    version: v1
+    label: KoreanOps ticket/log RAG
+    data_root: C:\vectorsearch-data
+    namespace_prefix: koreanops_documents
+    datasets:
+      - dataset_id: tickets_raw
+        label: Ticket CSV raw data
+        scope: legacy_root
+        stage: raw
+        path: raw/dataset-tickets-multi-lang-4-20k.csv
+        format: csv
+        source_type: ticket
+      - dataset_id: logs_raw
+        label: HDFS log raw data
+        scope: legacy_root
+        stage: raw
+        path: raw/HDFS_2k.log
+        format: text
+        source_type: log
+      - dataset_id: documents_full
+        label: Normalized ticket/log documents
+        scope: legacy_root
+        stage: normalized
+        path: processed/documents_full.jsonl
+        format: jsonl
+      - dataset_id: field_chunks
+        label: Field-aware ticket/log chunks
+        scope: legacy_root
+        stage: chunked
+        path: processed/documents_field_chunks.jsonl
+        format: jsonl
+        case_id: field_chunks
+        chunking_strategy: field
+        qdrant_collection: koreanops_documents_field_chunks
+        opensearch_index: koreanops_documents_field_chunks
+      - dataset_id: contextual_chunks
+        label: Contextual ticket/log chunks
+        scope: legacy_root
+        stage: chunked
+        path: processed/documents_contextual_chunks.jsonl
+        format: jsonl
+        case_id: contextual_chunks
+        chunking_strategy: contextual
+        qdrant_collection: koreanops_documents_contextual_chunks
+        opensearch_index: koreanops_documents_contextual_chunks
+      - dataset_id: validation_questions
+        label: Ticket/log validation QASET
+        scope: legacy_root
+        stage: qaset
+        path: eval/validation_questions.jsonl
+        format: jsonl
+    reports:
+      - report_id: experiment_report
+        label: V1 experiment report
+        scope: legacy_root
+        role: experiment
+        path: reports/experiment_report.md
+      - report_id: failure_analysis
+        label: V1 failure analysis
+        scope: legacy_root
+        role: failure_analysis
+        path: reports/failure_analysis.md
+      - report_id: validation_eval_report
+        label: V1 validation eval report
+        scope: legacy_root
+        role: evaluation
+        path: reports/validation_eval_report.md
+      - report_id: vector_quality_diagnosis
+        label: V1 vector quality diagnosis
+        scope: legacy_root
+        role: diagnosis
+        path: reports/vector_quality_diagnosis.md
+      - report_id: smoke_run
+        label: V1 smoke run report
+        scope: legacy_root
+        role: smoke
+        path: reports/smoke_run.md
+
+  - project_id: ko_unstructured_v2
+    version: v2
+    label: Korean office PDF RAG
+    data_root: C:\vectorsearch-data\ko-unstructured
+    namespace_prefix: ko_unstructured_pdf_
+    datasets:
+      - dataset_id: raw_archives
+        label: AI Hub raw PDF/label ZIP archives
+        scope: full
+        stage: raw
+        path: raw
+        format: directory
+      - dataset_id: office_manifest
+        label: Office PDF manifest
+        scope: full
+        stage: manifest
+        path: processed/office_manifest.jsonl
+        format: jsonl
+      - dataset_id: normalized_documents
+        label: Normalized office documents
+        scope: full
+        stage: normalized
+        path: processed/full/office_documents_normalized.jsonl
+        format: jsonl
+      - dataset_id: pdf_pages_raw
+        label: Parsed PDF pages
+        scope: full
+        stage: parsed
+        path: processed/full/pdf_pages_raw.jsonl
+        format: jsonl
+      - dataset_id: pdf_blocks_cleaned
+        label: Cleaned PDF text blocks
+        scope: full
+        stage: parsed
+        path: processed/full/pdf_blocks_cleaned.jsonl
+        format: jsonl
+      - dataset_id: pdf_page_chunks
+        label: Page chunks
+        scope: full
+        stage: chunked
+        path: processed/full/chunks_page.jsonl
+        format: jsonl
+        case_id: pdf_page
+        chunking_strategy: page
+        qdrant_collection: ko_unstructured_pdf_page
+        opensearch_index: ko_unstructured_pdf_page
+      - dataset_id: pdf_structure_chunks
+        label: Structure chunks
+        scope: full
+        stage: chunked
+        path: processed/full/chunks_structure.jsonl
+        format: jsonl
+        case_id: pdf_structure
+        chunking_strategy: structure
+        qdrant_collection: ko_unstructured_pdf_structure
+        opensearch_index: ko_unstructured_pdf_structure
+      - dataset_id: oracle_documents
+        label: Oracle documents
+        scope: full
+        stage: oracle
+        path: eval/full/oracle_documents.jsonl
+        format: jsonl
+        case_id: pdf_oracle
+        chunking_strategy: oracle
+      - dataset_id: oracle_pages
+        label: Oracle pages
+        scope: full
+        stage: oracle
+        path: eval/full/oracle_pages.jsonl
+        format: jsonl
+        case_id: pdf_oracle
+        chunking_strategy: oracle
+      - dataset_id: golden_questions_reviewed
+        label: Reviewed office QASET
+        scope: full
+        stage: qaset
+        path: eval/full/golden_questions_reviewed.jsonl
+        format: jsonl
+      - dataset_id: retrieval_page_reviewed_details
+        label: Page retrieval reviewed details
+        scope: full
+        stage: retrieval_result
+        path: eval/full/retrieval_page_reviewed_details.csv
+        format: csv
+        case_id: pdf_page
+      - dataset_id: retrieval_structure_reviewed_details
+        label: Structure retrieval reviewed details
+        scope: full
+        stage: retrieval_result
+        path: eval/full/retrieval_structure_reviewed_details.csv
+        format: csv
+        case_id: pdf_structure
+    reports:
+      - report_id: data_processing_spec_v2
+        label: V2 full data processing spec
+        scope: full
+        role: data_spec
+        path: reports/ko_unstructured_v2/data_processing_spec_v2.md
+      - report_id: full_retrieval_experiment
+        label: V2 full retrieval experiment
+        scope: full
+        role: experiment
+        path: reports/ko_unstructured_v2/full_retrieval_experiment.md
+      - report_id: full_golden_set_review
+        label: V2 full golden set review
+        scope: full
+        role: qaset_review
+        path: reports/ko_unstructured_v2/full_golden_set_review.md
+      - report_id: rag_evaluation
+        label: V2 RAG evaluation
+        scope: full
+        role: evaluation
+        path: reports/ko_unstructured_v2/rag_evaluation.md
+      - report_id: opensearch_qdrant_inventory
+        label: V2 vector-store inventory and operations
+        scope: full
+        role: operations
+        path: reports/ko_unstructured_v2/opensearch_qdrant_inventory_and_operations.md
+      - report_id: data_quality_report
+        label: V2 data quality report
+        scope: full
+        role: data_quality
+        path: reports/ko_unstructured_v2/data_quality_report.md
+      - report_id: retrieval_experiment
+        label: V2 pilot retrieval experiment
+        scope: pilot_100
+        role: experiment
+        path: reports/ko_unstructured_v2/retrieval_experiment.md
+      - report_id: chunking_analysis
+        label: V2 pilot chunking analysis
+        scope: pilot_100
+        role: chunking_analysis
+        path: reports/ko_unstructured_v2/chunking_analysis.md
+      - report_id: pdf_parsing_quality
+        label: V2 PDF parsing quality
+        scope: pilot_100
+        role: parsing_quality
+        path: reports/ko_unstructured_v2/pdf_parsing_quality.md
+      - report_id: schema_v1
+        label: V2 parsing/chunking/vector schema v1
+        scope: historical
+        role: schema
+        path: reports/ko_unstructured_v2/data_parsing_chunking_vector_schema_v1.md
+
+  - project_id: ko_dense_technical_v3
+    version: v3
+    label: Korean dense technical retrieval
+    data_root: C:\vectorsearch-data\ko-dense-technical
+    namespace_prefix: ko_dense_technical_v3_
+    case_registry: experiments/ko_dense_technical_v3/test_cases.yaml
+    datasets:
+      - dataset_id: academic_manifest
+        label: Academic paper manifest
+        scope: shared
+        stage: manifest
+        path: processed/academic_manifest.jsonl
+        format: jsonl
+      - dataset_id: pilot_1000_normalized_documents
+        label: Pilot 1000 normalized technical documents
+        scope: pilot_1000
+        stage: normalized
+        path: processed/pilot_1000/documents_normalized.jsonl
+        format: jsonl
+      - dataset_id: pilot_1000_pages
+        label: Pilot 1000 parsed pages
+        scope: pilot_1000
+        stage: parsed
+        path: processed/pilot_1000/pages.jsonl
+        format: jsonl
+      - dataset_id: pilot_1000_sections
+        label: Pilot 1000 parsed sections
+        scope: pilot_1000
+        stage: parsed
+        path: processed/pilot_1000/sections.jsonl
+        format: jsonl
+      - dataset_id: pilot_1000_fixed_chunks
+        label: Pilot 1000 fixed 512 chunks
+        scope: pilot_1000
+        stage: chunked
+        path: processed/pilot_1000/chunks_baseline_fixed_512.jsonl
+        format: jsonl
+        case_id: pilot_1000_fixed_512
+        chunking_strategy: fixed
+        qdrant_collection: ko_dense_technical_v3_pilot_1000_fixed_512
+        opensearch_index: ko_dense_technical_v3_pilot_1000_fixed_512
+      - dataset_id: pilot_1000_passage_chunks
+        label: Pilot 1000 passage chunks
+        scope: pilot_1000
+        stage: chunked
+        path: processed/pilot_1000/chunks_passage.jsonl
+        format: jsonl
+        case_id: pilot_1000_passage
+        chunking_strategy: passage
+        qdrant_collection: ko_dense_technical_v3_pilot_1000_passage
+        opensearch_index: ko_dense_technical_v3_pilot_1000_passage
+      - dataset_id: pilot_1000_section_chunks
+        label: Pilot 1000 section chunks
+        scope: pilot_1000
+        stage: chunked
+        path: processed/pilot_1000/chunks_baseline_section.jsonl
+        format: jsonl
+        case_id: pilot_1000_section
+        chunking_strategy: section
+        qdrant_collection: ko_dense_technical_v3_pilot_1000_section
+        opensearch_index: ko_dense_technical_v3_pilot_1000_section
+      - dataset_id: pilot_1000_canonical_qaset
+        label: Pilot 1000 canonical reviewed QASET
+        scope: pilot_1000
+        stage: qaset
+        path: eval/pilot_1000/qaset_canonical_reviewed.jsonl
+        format: jsonl
+      - dataset_id: pilot_1000_retrieval_summary
+        label: Pilot 1000 retrieval case summary
+        scope: pilot_1000
+        stage: retrieval_result
+        path: eval/pilot_1000/retrieval_case_summary_balanced_reviewed.csv
+        format: csv
+      - dataset_id: pilot_1000_hybrid_tuning_summary
+        label: Pilot 1000 hybrid tuning summary
+        scope: pilot_1000
+        stage: retrieval_result
+        path: eval/pilot_1000/hybrid_tuning_summary.csv
+        format: csv
+      - dataset_id: case_matrix_summary
+        label: V3 case matrix summary
+        scope: all_cases
+        stage: retrieval_result
+        path: eval/case_matrix_summary.csv
+        format: csv
+    reports:
+      - report_id: project_proposal
+        label: V3 project proposal
+        scope: planning
+        role: proposal
+        path: reports/ko_dense_technical_v3_project_proposal.md
+      - report_id: smoke_retrieval_eval
+        label: V3 smoke retrieval eval
+        scope: smoke_100
+        role: evaluation
+        path: reports/ko_dense_technical_v3_smoke_retrieval_eval.md
+      - report_id: pilot_to_full_execution_status
+        label: V3 pilot-to-FULL execution status
+        scope: pilot_1000
+        role: status
+        path: reports/ko_dense_technical_v3_pilot_to_full_execution_status.md
+      - report_id: qaset_generation_strategy
+        label: V3 QASET generation strategy
+        scope: pilot_1000
+        role: qaset_strategy
+        path: reports/ko_dense_technical_v3_qaset_generation_strategy.md
+      - report_id: pilot_qaset_review
+        label: V3 pilot QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_pilot_qaset_review.md
+      - report_id: pilot_qaset_improvement
+        label: V3 pilot QASET improvement
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_pilot_qaset_improvement.md
+      - report_id: qaset_protocol_comparison
+        label: V3 QASET protocol comparison
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_protocol_comparison.md
+      - report_id: qaset_protocol_review_comparison
+        label: V3 QASET protocol review comparison
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_protocol_review_comparison.md
+      - report_id: qaset_protocol_retrieval_comparison
+        label: V3 QASET protocol retrieval comparison
+        scope: pilot_1000
+        role: qaset_retrieval
+        path: reports/ko_dense_technical_v3_qaset_protocol_retrieval_comparison.md
+      - report_id: qaset_canonical_reviewed
+        label: V3 canonical QASET reviewed report
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_canonical_reviewed.md
+      - report_id: hybrid_tuning
+        label: V3 hybrid tuning
+        scope: pilot_1000
+        role: tuning
+        path: reports/ko_dense_technical_v3_hybrid_tuning.md
+      - report_id: hybrid_candidate_failure_analysis
+        label: V3 hybrid candidate failure analysis
+        scope: pilot_1000
+        role: failure_analysis
+        path: reports/ko_dense_technical_v3_hybrid_candidate_failure_analysis.md
+      - report_id: qaset_balanced_review
+        label: V3 balanced QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_balanced_review.md
+      - report_id: qaset_hard_negative_review
+        label: V3 hard-negative QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_hard_negative_review.md
+      - report_id: qaset_late_evidence_review
+        label: V3 late-evidence QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_late_evidence_review.md
+      - report_id: qaset_low_lexical_overlap_review
+        label: V3 low-lexical-overlap QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_low_lexical_overlap_review.md
+      - report_id: qaset_section_balanced_review
+        label: V3 section-balanced QASET review
+        scope: pilot_1000
+        role: qaset_review
+        path: reports/ko_dense_technical_v3_qaset_section_balanced_review.md
+
+  - project_id: shared
+    version: shared
+    label: Shared repo operations
+    data_root: C:\vectorsearch-data
+    namespace_prefix: shared
+    datasets: []
+    reports:
+      - report_id: data_dashboard_guide
+        label: Data dashboard guide
+        scope: shared
+        role: guide
+        path: reports/data_dashboard_guide.md
+      - report_id: data_pipeline_operational_review
+        label: Data pipeline operational review
+        scope: shared
+        role: operations
+        path: reports/data_pipeline_operational_review.md
+      - report_id: data_engineering_portfolio_case_study
+        label: Data engineering portfolio case study
+        scope: shared
+        role: portfolio
+        path: reports/data_engineering_portfolio_case_study.md

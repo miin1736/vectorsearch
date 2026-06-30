@@ -48,10 +48,10 @@ test_cases:
   - case_id: baseline_section
     stage: smoke
     group: baseline
-    technique: patent_section_chunking
+    technique: paper_section_chunking
     enabled: true
     index_namespace: ko_dense_technical_v3_section
-    chunking_profile: patent_section_max_480_e5_tokens
+    chunking_profile: paper_section_max_480_e5_tokens
     retriever_profile: dense_vector
     reranker_profile: none
     evaluation_profile: retrieval_core
@@ -120,7 +120,7 @@ test_cases:
     technique: section_level_retrieval
     enabled: true
     index_namespace: ko_dense_technical_v3_section_pilot
-    chunking_profile: patent_section_max_480_e5_tokens
+    chunking_profile: paper_section_max_480_e5_tokens
     retriever_profile: dense_vector
     reranker_profile: none
     evaluation_profile: retrieval_core
@@ -222,18 +222,18 @@ test_cases:
     expected_artifacts:
       - eval/cases/adaptive_k_score_tail_summary.csv
 
-  - case_id: ipc_cpc_soft_boost
+  - case_id: topic_keyword_soft_boost
     stage: pilot
     group: domain_scope
-    technique: ipc_cpc_domain_scoped_retrieval
+    technique: topic_keyword_domain_scoped_retrieval
     enabled: true
-    index_namespace: ko_dense_technical_v3_ipc_cpc_soft_boost
+    index_namespace: ko_dense_technical_v3_topic_keyword_soft_boost
     chunking_profile: best_available_from_smoke
-    retriever_profile: ipc_cpc_soft_boost
+    retriever_profile: topic_keyword_soft_boost
     reranker_profile: none
     evaluation_profile: hard_negative_rejection
     expected_artifacts:
-      - eval/cases/ipc_cpc_soft_boost_summary.csv
+      - eval/cases/topic_keyword_soft_boost_summary.csv
 
   - case_id: late_interaction_top50_subset
     stage: pilot
@@ -318,7 +318,7 @@ test_cases:
     group: deferred
     technique: multimodal_reranker
     enabled: false
-    reason: Patent figures and drawings are a separate multimodal project.
+    reason: Academic-paper figures and tables are a separate multimodal project.
     index_namespace: ko_dense_technical_v3_deferred_multimodal
     chunking_profile: not_applicable
     retriever_profile: multimodal

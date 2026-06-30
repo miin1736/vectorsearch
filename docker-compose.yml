@@ -38,3 +38,98 @@ services:
       - "5601:5601"
     depends_on:
       - opensearch
+
+  airflow-postgres:
+    image: postgres:16-alpine
+    profiles: ["data-engineering"]
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - C:/vectorsearch-data/data-engineering/postgres:/var/lib/postgresql/data
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    profiles: ["data-engineering"]
+    depends_on:
+      - airflow-postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/koreanops-rag/airflow/dags
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      DATA_ROOT: /vectorsearch-data/ko-unstructured
+      UV_PROJECT_ENVIRONMENT: /vectorsearch-data/data-engineering/airflow/venv
+      UV_CACHE_DIR: /vectorsearch-data/data-engineering/airflow/uv-cache
+    working_dir: /opt/koreanops-rag
+    command: >
+      bash -c "airflow db migrate &&
+      airflow users create --username admin --password admin --firstname Local --lastname Admin --role Admin --email admin@example.com || true &&
+      airflow webserver"
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./:/opt/koreanops-rag
+      - C:/vectorsearch-data:/vectorsearch-data
+      - C:/vectorsearch-data/data-engineering/airflow/logs:/opt/airflow/logs
+      - C:/vectorsearch-data/data-engineering/airflow/plugins:/opt/airflow/plugins
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    profiles: ["data-engineering"]
+    depends_on:
+      - airflow-postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/koreanops-rag/airflow/dags
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      DATA_ROOT: /vectorsearch-data/ko-unstructured
+      UV_PROJECT_ENVIRONMENT: /vectorsearch-data/data-engineering/airflow/venv
+      UV_CACHE_DIR: /vectorsearch-data/data-engineering/airflow/uv-cache
+    working_dir: /opt/koreanops-rag
+    command: bash -c "until airflow db check; do sleep 5; done && airflow scheduler"
+    volumes:
+      - ./:/opt/koreanops-rag
+      - C:/vectorsearch-data:/vectorsearch-data
+      - C:/vectorsearch-data/data-engineering/airflow/logs:/opt/airflow/logs
+      - C:/vectorsearch-data/data-engineering/airflow/plugins:/opt/airflow/plugins
+
+  spark-master:
+    image: apache/spark:3.5.1
+    profiles: ["data-engineering"]
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host 0.0.0.0
+    ports:
+      - "7077:7077"
+      - "8081:8080"
+    volumes:
+      - ./:/opt/koreanops-rag
+      - C:/vectorsearch-data:/vectorsearch-data
+      - C:/vectorsearch-data/data-engineering/spark:/bitnami/spark
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    profiles: ["data-engineering"]
+    depends_on:
+      - spark-master
+    command: /opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077 --webui-port 8081
+    ports:
+      - "8082:8081"
+    volumes:
+      - ./:/opt/koreanops-rag
+      - C:/vectorsearch-data:/vectorsearch-data
+      - C:/vectorsearch-data/data-engineering/spark:/bitnami/spark
+
+  minio:
+    image: minio/minio:RELEASE.2024-07-16T23-46-41Z
+    profiles: ["data-engineering"]
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - C:/vectorsearch-data/data-engineering/minio:/data

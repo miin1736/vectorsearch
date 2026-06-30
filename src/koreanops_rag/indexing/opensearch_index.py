@@ -12,7 +12,7 @@ from koreanops_rag.observability import RunRecorder, path_fingerprint, utc_now
 app = typer.Typer(add_completion=False)
 
 
-def create_index(client, index: str) -> None:
+def create_index(client, index: str, search_field: str = "content") -> None:
     if client.indices.exists(index=index):
         return
     client.indices.create(
@@ -24,6 +24,10 @@ def create_index(client, index: str) -> None:
                     "source_type": {"type": "keyword"},
                     "title": {"type": "text"},
                     "content": {"type": "text"},
+                    "bm25_text": {"type": "text"},
+                    "embedding_text": {"type": "text", "index": False},
+                    "display_text": {"type": "text", "index": False},
+                    "preserved_elements": {"type": "object", "enabled": True},
                     "metadata": {"type": "object", "enabled": True},
                 }
             }
@@ -87,7 +91,7 @@ def run(
             status="running",
         )
         client = OpenSearch(hosts=[config.opensearch.url], use_ssl=False)
-        create_index(client, config.opensearch.index)
+        create_index(client, config.opensearch.index, config.opensearch.search_field)
         actions = (
             {"_index": config.opensearch.index, "_id": row["doc_id"], "_source": row}
             for row in read_jsonl(documents_jsonl)

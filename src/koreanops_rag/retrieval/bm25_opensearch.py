@@ -6,10 +6,18 @@ from koreanops_rag.schemas import SearchResult
 
 
 class OpenSearchBM25Retriever:
-    def __init__(self, url: str, index: str, username: str = "admin", password: str = "admin"):
+    def __init__(
+        self,
+        url: str,
+        index: str,
+        username: str = "admin",
+        password: str = "admin",
+        search_field: str = "content",
+    ):
         from opensearchpy import OpenSearch
 
         self.index = index
+        self.search_field = search_field
         self.client = OpenSearch(
             hosts=[url],
             http_auth=(username, password),
@@ -24,7 +32,7 @@ class OpenSearchBM25Retriever:
         top_k: int = 10,
         filters: dict[str, Any] | None = None,
     ) -> list[SearchResult]:
-        must: list[dict[str, Any]] = [{"match": {"content": query}}]
+        must: list[dict[str, Any]] = [{"match": {self.search_field: query}}]
         filter_clauses = []
         for key, value in (filters or {}).items():
             filter_clauses.append({"term": {f"metadata.{key}.keyword": value}})

@@ -12,6 +12,7 @@ dependencies = [
     "pymupdf>=1.24.0",
     "pydantic>=2.7.0",
     "pydantic-settings>=2.3.0",
+    "pyspark>=3.5.0",
     "pyyaml>=6.0.1",
     "qdrant-client>=1.9.0",
     "ragas>=0.2.0",
@@ -52,7 +53,21 @@ koreanops-office-eval-parsing = "koreanops_rag.office.evaluate_parsing:main"
 koreanops-office-eval-chunking = "koreanops_rag.office.evaluate_chunking:main"
 koreanops-office-eval-retrieval = "koreanops_rag.office.evaluate_retrieval:main"
 koreanops-office-eval-rag = "koreanops_rag.office.evaluate_rag:main"
+koreanops-office-jsonl-to-parquet = "koreanops_rag.office_de.spark:main"
+koreanops-office-data-quality = "koreanops_rag.office_de.quality:main"
+koreanops-office-build-mart = "koreanops_rag.office_de.mart:main"
+koreanops-office-write-eval-mart = "koreanops_rag.office_de.eval_mart:main"
 koreanops-v3-cases = "koreanops_rag.v3.test_cases:main"
+koreanops-v3-runner = "koreanops_rag.v3.runner:main"
+koreanops-v3-academic-inventory = "koreanops_rag.v3.academic_papers:inventory_main"
+koreanops-v3-academic-parse = "koreanops_rag.v3.academic_papers:parse_main"
+koreanops-v3-chunks = "koreanops_rag.v3.chunking:main"
+koreanops-v3-retrieval = "koreanops_rag.v3.retrieval_eval:main"
+koreanops-v3-review-qaset = "koreanops_rag.v3.qaset_review:main"
+koreanops-v3-qaset-protocols = "koreanops_rag.v3.qaset_protocols:main"
+koreanops-v3-preprocess = "koreanops_rag.v3.preprocessing:main"
+koreanops-v3-reconstruct = "koreanops_rag.v3.reconstruction:main"
+koreanops-data-dashboard = "koreanops_rag.dashboard:main"
 
 [build-system]
 requires = ["hatchling"]
@@ -70,5 +85,3 @@ testpaths = ["tests"]
 markers = [
     "integration: requires Docker services such as Qdrant or OpenSearch",
 ]
-
-

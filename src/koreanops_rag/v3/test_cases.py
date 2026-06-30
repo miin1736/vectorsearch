@@ -12,6 +12,7 @@ import yaml
 from pydantic import BaseModel, Field, model_validator
 
 from koreanops_rag.io import ensure_parent
+from koreanops_rag.v3.profiles import get_profile, validate_profile_references
 
 DEFAULT_REGISTRY = Path("experiments/ko_dense_technical_v3/test_cases.yaml")
 REQUIRED_SUMMARY_FIELDS = [
@@ -52,6 +53,15 @@ class TestCase(BaseModel):
     def validate_disabled_reason(self) -> "TestCase":
         if not self.enabled and not self.reason:
             raise ValueError(f"{self.case_id} is disabled but has no reason")
+        try:
+            validate_profile_references(
+                chunking_profile=self.chunking_profile,
+                retriever_profile=self.retriever_profile,
+                reranker_profile=self.reranker_profile,
+                evaluation_profile=self.evaluation_profile,
+            )
+        except KeyError as exc:
+            raise ValueError(f"{self.case_id}: {exc}") from exc
         return self
 
 
@@ -136,9 +146,17 @@ def build_case_manifest(
         "qdrant_collection": case.index_namespace,
         "opensearch_index": case.index_namespace,
         "chunking_profile": case.chunking_profile,
+        "chunking_profile_detail": get_profile("chunking", case.chunking_profile).model_dump(),
         "retriever_profile": case.retriever_profile,
+        "retriever_profile_detail": get_profile(
+            "retriever", case.retriever_profile
+        ).model_dump(),
         "reranker_profile": case.reranker_profile,
+        "reranker_profile_detail": get_profile("reranker", case.reranker_profile).model_dump(),
         "evaluation_profile": case.evaluation_profile,
+        "evaluation_profile_detail": get_profile(
+            "evaluation", case.evaluation_profile
+        ).model_dump(),
         "golden_set_version": registry.default_golden_set_version,
         "registry_path": str(registry_path),
         "registry_hash": registry_hash(registry_path),

@@ -1,0 +1,24 @@
+data_root: C:\vectorsearch-data\ko-dense-technical
+embedding:
+  model_name: intfloat/multilingual-e5-small
+  batch_size: 128
+  device: cpu
+  document_prefix: "passage: "
+  query_prefix: "query: "
+retrieval:
+  top_k: 10
+  candidate_k: 50
+  rrf_k: 60
+qdrant:
+  collection: ko_dense_technical_v3_pilot_1000_page_subchunk
+opensearch:
+  index: ko_dense_technical_v3_pilot_1000_page_subchunk
+  url: http://localhost:9200
+  username: admin
+  password: admin
+rag:
+  provider: ollama
+  ollama_base_url: http://localhost:11434
+  ollama_model: llama3.1:8b-instruct-q4_K_M
+evaluation:
+  ragas_sample_size: 200
